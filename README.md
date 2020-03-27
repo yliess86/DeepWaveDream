@@ -8,7 +8,7 @@ DeepWaveDream is an experimental library. It aimes at sonifying the gradient nor
 
 ## Install
 
-To install the library you first need to install the wavedream library following the instruction on the repository: [WaveDream](https://github.com/yliess86/WaveDream). It consists of building [PyBind11](https://github.com/pybind/pybind11) from its sources and running a `setup.py` script.
+To install the library you first need to install the wavedream library following the instruction on the repository: [WaveDream](https://github.com/yliess86/WaveDream). It consists of installing [PyBind11](https://github.com/pybind/pybind11), [SoundIO](http://libsound.io/) and running a `setup.py` script.
 
 Then the library can be installed using the `setup.py` script as follow (may require sudo):
 ```bash
