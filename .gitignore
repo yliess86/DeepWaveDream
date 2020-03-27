@@ -145,3 +145,4 @@ static
 # Datasets
 dataset/
 *.wav
+*.eps
