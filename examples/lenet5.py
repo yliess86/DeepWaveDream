@@ -1,3 +1,11 @@
+"""lenet5.py
+
+The scipt is an example of usage for the deepwavedream library applied to the
+training of a LeNet5 convolutional deep learning model on the MNIST dataset
+using an SGD optimizer with Pytorch.
+
+python3 -m examples.lenet5 --help 
+"""
 from deepwavedream import Record
 from deepwavedream.utils import quantize_to_nearest
 from .base import DreamBell
@@ -30,6 +38,9 @@ class LeNet5(nn.Module):
         return X
 
 
+"""
+Custom Recorder extension with custom process function as required by the api.
+"""
 class MyRecord(Record):
     def __init__(self, *args, **kwargs) -> None:
         super(MyRecord, self).__init__(*args, **kwargs)
@@ -77,6 +88,11 @@ if __name__ == "__main__":
     optim = SGD(model.parameters(), lr=args.learning_rate)
 
 
+    """
+    Record initialization by defining the instrument to use as well as the 
+    layers to be recorded. Layer order is important for the sonification as the
+    information is passed to the process function and may be used in some way.
+    """
     bell = DreamBell(0.02) 
     listen = [model.conv1, model.conv2, model.fc1, model.fc2, model.fc3]
     record = MyRecord(listen, instru=bell)
@@ -97,7 +113,7 @@ if __name__ == "__main__":
             loss = critertion(Y, l.long())
 
             loss.backward()
-            record.update()
+            record.update() """Record update call to register current state"""
             optim.step()
 
             L = torch.argmax(Y, axis=-1)
@@ -105,4 +121,9 @@ if __name__ == "__main__":
 
             pbar.set_postfix(acc=f"{acc:.2%}")
 
+    """
+    Save the current record as a wav file with a define note duration. The 
+    duration may be tweeked to analyze with the audio at different speed and
+    focus more in depth on certain parts of the training.
+    """
     record.save(args.layer_duration, args.path)
