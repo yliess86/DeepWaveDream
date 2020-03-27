@@ -25,6 +25,8 @@ $ python3 -m examples.lenet5 --help
 The usage consists of defining wavedream `Instrument`, extending the deepwavedream `Record` class by implementing a custom `process` function and finally by update the record during training and saving the final `wavefile`.
 
 ```python
+from deepwavedream.utils import quantize_to_nearest
+
 import wavedream as wd
 import deepwavedream as dwd
 
