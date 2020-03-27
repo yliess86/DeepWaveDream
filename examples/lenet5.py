@@ -6,13 +6,13 @@ using an SGD optimizer with Pytorch.
 
 python3 -m examples.lenet5 --help 
 """
-from deepwavedream import Record
 from deepwavedream.utils import quantize_to_nearest
 from .base import DreamBell
 from tqdm import tqdm
 
 import torch
 import torch.nn as nn
+import deepwavedream as dwd
 
 
 class LeNet5(nn.Module):
@@ -41,9 +41,9 @@ class LeNet5(nn.Module):
 """
 Custom Recorder extension with custom process function as required by the api.
 """
-class MyRecord(Record):
+class Record(dwd.Record):
     def __init__(self, *args, **kwargs) -> None:
-        super(MyRecord, self).__init__(*args, **kwargs)
+        super(Record, self).__init__(*args, **kwargs)
 
     def process(self, layer: int, norm_grad: float) -> int:
         freq = 110.0 + 100 * 2 ** layer + norm_grad * 200.0
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     """
     bell = DreamBell(0.02) 
     listen = [model.conv1, model.conv2, model.fc1, model.fc2, model.fc3]
-    record = MyRecord(listen, instru=bell)
+    record = Record(listen, instru=bell)
 
 
     for epoch in tqdm(range(args.epochs), desc="Epoch"):
@@ -113,7 +113,7 @@ if __name__ == "__main__":
             loss = critertion(Y, l.long())
 
             loss.backward()
-            record.update() """Record update call to register current state"""
+            record.update() # Record update call to register current state
             optim.step()
 
             L = torch.argmax(Y, axis=-1)
