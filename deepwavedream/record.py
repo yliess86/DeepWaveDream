@@ -114,9 +114,32 @@ class Record:
         wav.write(path, sr, np.array(samples))
 
     def checkpoint(self, path: str) -> None:
+        """checkpoint
+        
+        Arguments:
+            path {str} -- where to save the checkpoint
+        """
         data = {
             "n_layers": len(self.layers),
             "history": self.history 
         }
-        with open(path, "r") as fh:
+        with open(path, "w") as fh:
             json.dump(data, fh, indent=4, sort_keys=False)
+
+    @classmethod
+    def from_checkpoint(cls, path: str) -> "Record":
+        """from checkpoint
+        
+        Arguments:
+            path {str} -- path to the checkpoint
+
+        Returns:
+            [Record] -- Fake record for holding checkpoint data
+        """
+        with open(path, "r") as fh:
+            data = json.load(fh.read())
+        
+        record = cls([None for i in range(data["n_layers"])], None)
+        record.history = data["history"]
+
+        return record
