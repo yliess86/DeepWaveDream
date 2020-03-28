@@ -24,9 +24,15 @@ like sounds. If the custom instrument does not extend from the wd.Instrument,
 it must reimplement the '__call__', 'note_on' and 'not_off'.
 """
 class DreamBell:
-    def __init__(self, volume: float) -> None:
+    def __init__(
+        self, 
+        volume: float, 
+        gain: float = 0.2, 
+        feedback: float = 0.95, 
+        wet: float = 0.9
+    ) -> None:
         self.bell = Bell(volume)
-        self.reverb = wd.Reverb(48_000, 0.2, 0.95, 0.9)
+        self.reverb = wd.Reverb(48_000, gain, feedback, wet)
 
     def __call__(self, t: float) -> float:
         return self.reverb(self.bell(t))

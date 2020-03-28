@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     parser = ArgumentParser(description="Train and record LeNet5 on MNIST.")
     parser.add_argument("--epochs",         "-e", default=2,     type=int)
-    parser.add_argument("--batch_size",     "-b", default=252,   type=int)
+    parser.add_argument("--batch_size",     "-b", default=256,   type=int)
     parser.add_argument("--learning_rate",  "-l", default=1e-1,  type=float)
     parser.add_argument("--layer_duration", "-d", default=1e-1,  type=float)
     parser.add_argument("--path",           "-p", required=True, type=str)
