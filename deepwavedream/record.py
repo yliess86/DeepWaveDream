@@ -8,6 +8,7 @@ or artistic purposes.
 from typing import List
 from tqdm import tqdm
 
+import json
 import numpy as np
 import scipy.io.wavfile as wav
 import torch
@@ -111,3 +112,11 @@ class Record:
             samples.append(self.instru(t))
 
         wav.write(path, sr, np.array(samples))
+
+    def checkpoint(self, path: str) -> None:
+        data = {
+            "n_layers": len(self.layers),
+            "history": self.history 
+        }
+        with open(path, "r") as fh:
+            json.dump(data, fh, indent=4, sort_keys=False)
