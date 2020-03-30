@@ -18,20 +18,28 @@ class Bell(wd.Instrument):
         wd.Instrument.__init__(self, self.t, self.a, volume)
 
 
+class Pad(wd.Instrument):    
+    def __init__(self, volume: float) -> None:
+        self.t = wd.Timbre([wd.Formant(wd.Oscillator.Style.SIN, 1.0, 0)])
+        self.a = wd.ADSR(0.2, 0.2, 0.0, 0.0)
+        wd.Instrument.__init__(self, self.t, self.a, volume)
+
+
 """
-This instrument uses the bell instrument and adds a cloudy reverb for ambient
+This instrument uses a base instrument and adds a cloudy reverb for ambient
 like sounds. If the custom instrument does not extend from the wd.Instrument,
 it must reimplement the '__call__', 'note_on' and 'not_off'.
 """
-class DreamBell:
+class DreamSynth:
     def __init__(
-        self, 
+        self,
+        base: wd.Instrument, 
         volume: float, 
         gain: float = 0.2, 
         feedback: float = 0.95, 
         wet: float = 0.9
     ) -> None:
-        self.bell = Bell(volume)
+        self.bell = base(volume)
         self.reverb = wd.Reverb(48_000, gain, feedback, wet)
 
     def __call__(self, t: float) -> float:

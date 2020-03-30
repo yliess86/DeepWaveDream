@@ -7,8 +7,8 @@ using an SGD optimizer with Pytorch.
 python3 -m examples.lenet5 --help 
 """
 from deepwavedream.utils import quantize_to_nearest
-from .base import DreamBell
 from tqdm import tqdm
+from .base import *
 
 import torch
 import torch.nn as nn
@@ -42,12 +42,18 @@ class LeNet5(nn.Module):
 Custom Recorder extension with custom process function as required by the api.
 """
 class Record(dwd.Record):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, scale: str, **kwargs) -> None:
         super(Record, self).__init__(*args, **kwargs)
+        self.scale = scale
+        self.notes = list(range(len(wd.NOTES)))
+        if scale == "minor":
+            self.notes = wd.Scale.minor(69)
+        elif scale == "major":
+            self.notes = wd.Scale.major(69) 
 
     def process(self, layer: int, norm_grad: float) -> int:
-        freq = 110.0 + 50 * 2 ** layer + norm_grad * 200.0
-        return quantize_to_nearest(freq)
+        freq = 220.0 + 50.0 * (2 ** layer) + norm_grad * 200.0
+        return quantize_to_nearest(freq, self.notes)
 
 
 if __name__ == "__main__":
@@ -57,16 +63,21 @@ if __name__ == "__main__":
     from torchvision.datasets import mnist
     from torchvision.transforms import ToTensor
 
-    from .base import DreamBell
-
 
     parser = ArgumentParser(description="Train and record LeNet5 on MNIST.")
-    parser.add_argument("--epochs",         "-e", default=2,     type=int)
-    parser.add_argument("--batch_size",     "-b", default=256,   type=int)
-    parser.add_argument("--learning_rate",  "-l", default=1e-1,  type=float)
-    parser.add_argument("--layer_duration", "-d", default=1e-1,  type=float)
-    parser.add_argument("--cumulate",             default=1,     type=int)
-    parser.add_argument("--path",           "-p", required=True, type=str)
+    parser.add_argument("--epochs",         "-e", default=2,      type=int)
+    parser.add_argument("--batch_size",     "-b", default=256,    type=int)
+    parser.add_argument("--learning_rate",  "-l", default=1e-1,   type=float)
+    parser.add_argument("--layer_duration", "-d", default=1e-1,   type=float)
+    parser.add_argument("--cumulate",             default=1,      type=int)
+    
+    parser.add_argument("--scale",          "-s", default="all",  type=str)
+    parser.add_argument("--instru",         "-i", default="bell", type=str)
+    parser.add_argument("--gain",           "-g", default=0.2,    type=float)
+    parser.add_argument("--feedback",       "-f", default=0.95,   type=float)
+    parser.add_argument("--wet",            "-w", default=0.9,    type=float)
+    
+    parser.add_argument("--path",           "-p", required=True,  type=str)
     parser.add_argument("--cuda",           "-c", action="store_true")
     args = parser.parse_args()
 
@@ -94,9 +105,18 @@ if __name__ == "__main__":
     layers to be recorded. Layer order is important for the sonification as the
     information is passed to the process function and may be used in some way.
     """
-    bell = DreamBell(0.02) 
+    base   = Bell
+    if args.instru == "pad":
+        base = Pad
+
+    instru = DreamSynth(base, 0.2, args.gain, args.feedback, args.wet) 
     listen = [model.conv1, model.conv2, model.fc1, model.fc2, model.fc3]
-    record = Record(listen, instru=bell, cumulate=args.cumulate)
+    record = Record(
+        listen, 
+        scale=args.scale, 
+        instru=instru, 
+        cumulate=args.cumulate
+    )
 
 
     for epoch in tqdm(range(args.epochs), desc="Epoch"):
@@ -129,3 +149,18 @@ if __name__ == "__main__":
     focus more in depth on certain parts of the training.
     """
     record.save(args.layer_duration, args.path)
+
+    import matplotlib.pyplot as plt
+
+    l = int(len(record.layers))
+    n = int(len(record) / l)
+    X = range(n)
+
+    plt.figure()
+    
+    for layer in range(l):
+        Y = record.history[layer::l]
+        plt.scatter(X, Y)
+    
+    plt.legend(labels=[f"Layer_{layer}" for layer in range(l)])
+    plt.show()
