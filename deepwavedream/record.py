@@ -98,7 +98,7 @@ class Record:
             or (batch_id == (batches - 1))
         ):
             self.history += [
-                self.process(i, rec / self.cumulate)
+                self.process(layer, rec / self.cumulate)
                 for layer, rec in enumerate(self.cumul)
             ]
             self.cumul = [0 for i in range(len(self.layers))]

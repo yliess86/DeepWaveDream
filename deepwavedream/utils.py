@@ -24,4 +24,4 @@ def quantize_to_nearest(freq: float, notes: List[int] = NOTES) -> int:
         int -- quantized frequency to closest note
     """
     X = np.array([wd.NOTES[note] for note in notes])
-    return (np.abs(X - freq)).argmin()
+    return notes[(np.abs(X - freq)).argmin()]
