@@ -33,18 +33,30 @@ class Record:
         layers {List[nn.Module]} -- Chosen layer to record
         instru {wd.Instrument} -- Chosen instrument
         history {List[int]} -- Note records to be played
+        cumulate {int} -- batches to cumulate - average (default: {1})
+        cumul {List[int]} -- Note to cumulate - will be appended to 
+            history when cumulation is done
     """
 
-    def __init__(self, layers: Modules, instru: wd.Instrument) -> None:
+    def __init__(
+        self, 
+        layers: Modules, 
+        instru: wd.Instrument, 
+        cumulate: int = 1
+    ) -> None:
         """__init__
         
         Arguments:
             layers {Modules} -- Chosen layer to record
             instru {wd.Instrument} -- Chosen instrument
+            cumulate {int} -- batches to cumulate - average (default: {1})
         """
         self.layers = layers
         self.instru = instru
         self.history: List[int] = []
+
+        self.cumulate = cumulate
+        self.cumul: List[int] = [0 for i in range(len(self.layers))]
 
     def __len__(self) -> int:
         """__len__
@@ -71,14 +83,26 @@ class Record:
         """
         raise NotImplementedError("Process should be implemented to work.")
 
-    def update(self) -> None:
+    def update(self, batch_id: int, batches: int) -> None:
         """update
 
         Update step to record all notes from all recordred layers.
         """
         for i, layer in enumerate(self.layers):
             norm_grad = torch.norm(layer.weight.grad).item()
-            self.history.append(self.process(i, norm_grad))
+            self.cumul[i] += norm_grad
+
+        if (
+            (self.cumulate == 1) 
+            or (batch_id % (self.cumulate - 1) == 0)
+            or (batch_id == (batches - 1))
+        ):
+            self.history += [
+                self.process(i, rec / self.cumulate)
+                for layer, rec in enumerate(self.cumul)
+            ]
+            self.cumul = [0 for i in range(len(self.layers))]
+
 
     def save(self, layer_duration: float, path: str, sr: int = 48_000) -> None:
         """save

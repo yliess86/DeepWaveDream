@@ -52,11 +52,11 @@ listen = [model.layer1, model.layer2]
 record = Record(listen, instru=bell)
 
 for epoch in epochs:
-    for batch in batches:
+    for batch_id, batch in enumerate(batches):
         # ...
         
         loss.backward()
-        record.update()
+        record.update(batch_id, len(batches))
         optimizer.Step()
 
         # ...

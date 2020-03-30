@@ -46,7 +46,7 @@ class Record(dwd.Record):
         super(Record, self).__init__(*args, **kwargs)
 
     def process(self, layer: int, norm_grad: float) -> int:
-        freq = 110.0 + 100 * 2 ** layer + norm_grad * 200.0
+        freq = 110.0 + 50 * 2 ** layer + norm_grad * 200.0
         return quantize_to_nearest(freq)
 
 
@@ -65,6 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size",     "-b", default=256,   type=int)
     parser.add_argument("--learning_rate",  "-l", default=1e-1,  type=float)
     parser.add_argument("--layer_duration", "-d", default=1e-1,  type=float)
+    parser.add_argument("--cumulate",             default=1,     type=int)
     parser.add_argument("--path",           "-p", required=True, type=str)
     parser.add_argument("--cuda",           "-c", action="store_true")
     args = parser.parse_args()
@@ -95,7 +96,7 @@ if __name__ == "__main__":
     """
     bell = DreamBell(0.02) 
     listen = [model.conv1, model.conv2, model.fc1, model.fc2, model.fc3]
-    record = Record(listen, instru=bell)
+    record = Record(listen, instru=bell, cumulate=args.cumulate)
 
 
     for epoch in tqdm(range(args.epochs), desc="Epoch"):
@@ -103,7 +104,7 @@ if __name__ == "__main__":
         n = len(loader.dataset)
         acc = 0.0
         pbar = tqdm(loader, desc="Batch")
-        for X, l in pbar:
+        for batch_id, (X, l) in enumerate(pbar):
             if args.cuda:
                 X, l = X.cuda(), l.cuda()
             
@@ -113,7 +114,8 @@ if __name__ == "__main__":
             loss = critertion(Y, l.long())
 
             loss.backward()
-            record.update() # Record update call to register current state
+            # Record update call to register current state
+            record.update(batch_id, len(loader))
             optim.step()
 
             L = torch.argmax(Y, axis=-1)
