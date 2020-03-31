@@ -36,14 +36,21 @@ class DreamSynth:
         base: wd.Instrument, 
         volume: float, 
         gain: float = 0.2, 
-        feedback: float = 0.95, 
-        wet: float = 0.9
+        feedback: float = 0.95,
+        wet: float = 0.9,
+        n_reverbs: int = 1 
     ) -> None:
         self.bell = base(volume)
-        self.reverb = wd.Reverb(48_000, gain, feedback, wet)
+        self.reverbs = [
+            wd.Reverb(48_000, gain, feedback, wet)
+            for i in range(n_reverbs)
+        ]
 
     def __call__(self, t: float) -> float:
-        return self.reverb(self.bell(t))
+        y = self.bell(t)
+        for reverb in self.reverbs:
+            y = reverb(y)
+        return y
 
     def note_on(self, t: float, note: int) -> None:
         self.bell.note_on(t, note)

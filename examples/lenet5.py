@@ -42,14 +42,15 @@ class LeNet5(nn.Module):
 Custom Recorder extension with custom process function as required by the api.
 """
 class Record(dwd.Record):
-    def __init__(self, *args, scale: str, **kwargs) -> None:
+    def __init__(self, *args, scale: str, key: int, **kwargs) -> None:
         super(Record, self).__init__(*args, **kwargs)
         self.scale = scale
+        self.key = key
         self.notes = list(range(len(wd.NOTES)))
         if scale == "minor":
-            self.notes = wd.Scale.minor(69)
+            self.notes = wd.Scale.minor(key)
         elif scale == "major":
-            self.notes = wd.Scale.major(69) 
+            self.notes = wd.Scale.major(key) 
 
     def process(self, layer: int, norm_grad: float) -> int:
         freq = 220.0 + 50.0 * (2 ** layer) + norm_grad * 200.0
@@ -72,6 +73,8 @@ if __name__ == "__main__":
     parser.add_argument("--cumulate",             default=1,      type=int)
     
     parser.add_argument("--scale",          "-s", default="all",  type=str)
+    parser.add_argument("--key",            "-k", default=69,     type=int)
+
     parser.add_argument("--instru",         "-i", default="bell", type=str)
     parser.add_argument("--gain",           "-g", default=0.2,    type=float)
     parser.add_argument("--feedback",       "-f", default=0.95,   type=float)
@@ -114,6 +117,7 @@ if __name__ == "__main__":
     record = Record(
         listen, 
         scale=args.scale, 
+        key=args.key,
         instru=instru, 
         cumulate=args.cumulate
     )

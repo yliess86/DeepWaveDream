@@ -33,6 +33,7 @@ class Record:
         layers {List[nn.Module]} -- Chosen layer to record
         instru {wd.Instrument} -- Chosen instrument
         history {List[int]} -- Note records to be played
+        raw_history {List[float]} -- Gradient norm raw records
         cumulate {int} -- batches to cumulate - average (default: {1})
         cumul {List[int]} -- Note to cumulate - will be appended to 
             history when cumulation is done
@@ -54,6 +55,7 @@ class Record:
         self.layers = layers
         self.instru = instru
         self.history: List[int] = []
+        self.raw_history: List[float] = []
 
         self.cumulate = cumulate
         self.cumul: List[int] = [0 for i in range(len(self.layers))]
@@ -97,9 +99,10 @@ class Record:
             or (batch_id % (self.cumulate - 1) == 0)
             or (batch_id == (batches - 1))
         ):
+            raws = [rec / self.cumulate for rec in self.cumul]
+            self.raw_history += raws
             self.history += [
-                self.process(layer, rec / self.cumulate)
-                for layer, rec in enumerate(self.cumul)
+                self.process(layer, raw) for layer, raw in enumerate(raws)
             ]
             self.cumul = [0 for i in range(len(self.layers))]
 
@@ -145,17 +148,19 @@ class Record:
         """
         data = {
             "n_layers": len(self.layers),
-            "history": self.history 
+            "history": self.history, 
+            "raw_history": self.raw_history,
         }
         with open(path, "w") as fh:
             json.dump(data, fh, indent=4, sort_keys=False)
 
     @classmethod
-    def from_checkpoint(cls, path: str) -> "Record":
+    def from_checkpoint(cls, path: str, instru: wd.Instrument) -> "Record":
         """from checkpoint
         
         Arguments:
             path {str} -- path to the checkpoint
+            instru {wd.Instrument} -- Chosen instrument
 
         Returns:
             [Record] -- Fake record for holding checkpoint data
@@ -163,7 +168,8 @@ class Record:
         with open(path, "r") as fh:
             data = json.load(fh.read())
         
-        record = cls([None for i in range(data["n_layers"])], None)
+        record = cls([None for i in range(data["n_layers"])], instru)
         record.history = data["history"]
+        record.raw_history = data["raw_history"]
 
         return record
