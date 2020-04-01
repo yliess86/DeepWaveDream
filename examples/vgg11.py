@@ -90,6 +90,8 @@ if __name__ == "__main__":
     from torchvision.transforms import RandomCrop
     from torchvision.transforms import ToTensor
 
+    import matplotlib.pyplot as plt
+
 
     parser = ArgumentParser(description="Train and record LeNet5 on MNIST.")
     parser.add_argument("--epochs",         "-e", default=2,      type=int)
@@ -103,9 +105,6 @@ if __name__ == "__main__":
     parser.add_argument("--key",            "-k", default=69,     type=int)
 
     parser.add_argument("--instru",         "-i", default="bell", type=str)
-    parser.add_argument("--gain",           "-g", default=0.2,    type=float)
-    parser.add_argument("--feedback",       "-f", default=0.95,   type=float)
-    parser.add_argument("--wet",            "-w", default=0.9,    type=float)
     parser.add_argument("--n_reverbs",      "-n", default=1,      type=int)
     
     parser.add_argument("--path",           "-p", required=True,  type=str)
@@ -173,11 +172,7 @@ if __name__ == "__main__":
     base   = Bell
     if args.instru == "pad":
         base = Pad
-
-    instru = DreamSynth(
-        base, 0.2, 
-        args.gain, args.feedback, args.wet, args.n_reverbs,
-    ) 
+    instru = DreamSynth(base, 0.2, 0.1, 0.95, 1.0, args.n_reverbs) 
 
     n_layers = max(min(args.n_layers, 11), 1)
     listen = [
@@ -241,17 +236,33 @@ if __name__ == "__main__":
     """
     Save the current record as a wav file with a define note duration. The 
     duration may be tweeked to analyze with the audio at different speed and
-    focus more in depth on certain parts of the training.
+    focus more in depth on certain parts of the training. Addition of callback
+    for controlling the wetness of the reverb based on the accuracy.
     """
-    record.save(args.layer_duration, args.path)
-
-    import matplotlib.pyplot as plt
-
-    l = int(len(record.layers))
-    n = int(len(record) / l)
+    r = len(record)
+    l = len(record.layers)
+    n = int(r / l)
     X = list(range(n))
     s = n / args.epochs
 
+
+    def callback(self: dwd.Record, note: int) -> None:
+        global metrics, args, r
+        note_per_epoch = r / args.epochs
+        epoch = int(note // note_per_epoch)
+        val_acc = metrics["acc"]["valid"][epoch]
+        inv_val_acc = 1 - val_acc
+        for reverb in self.instru.reverbs:
+            reverb.wet = inv_val_acc
+            reverb.feedback = 0.1 + inv_val_acc * (0.95 - 0.1)
+    
+
+    record.save(args.layer_duration, args.path, callback=callback)
+
+    """
+    Plot the note progression with the accruacy and the raw gradient norm on
+    a graph.
+    """
     plt.figure()
     
     plt.subplot(311)
@@ -261,8 +272,8 @@ if __name__ == "__main__":
         if x % s == 0: plt.axvline(x=x, c="gray", alpha=0.3)
     for layer in range(l):
         Y = record.history[layer::l]
-        plt.scatter(X, Y, marker="_")
-    plt.legend(labels=[f"Layer_{layer}" for layer in range(l)])
+        plt.scatter(X, Y, marker="_", label=f"layer_{layer}")
+    plt.legend()
     
     plt.subplot(312)
     plt.ylabel = "Gradient Norm"
@@ -271,8 +282,8 @@ if __name__ == "__main__":
         if x % s == 0: plt.axvline(x=x, c="gray", alpha=0.3)
     for layer in range(l):
         Y = record.raw_history[layer::l]
-        plt.plot(X, Y)
-    plt.legend(labels=[f"Layer_{layer}" for layer in range(l)])
+        plt.plot(X, Y, label=f"layer_{layer}")
+    plt.legend()
 
     X = list(range(args.epochs))
     plt.subplot(313)
@@ -280,9 +291,9 @@ if __name__ == "__main__":
     plt.xlabel = "Epoch"
     for e in range(args.epochs):
         plt.axvline(x=e, c="gray", alpha=0.3)
-    plt.plot(X, metrics["acc"]["train"])
-    plt.plot(X, metrics["acc"]["valid"])
-    plt.legend(labels=["train", "valid"])
+    plt.plot(X, metrics["acc"]["train"], label="train")
+    plt.plot(X, metrics["acc"]["valid"], label="valid")
+    plt.legend()
 
     plt.tight_layout()
     plt.show()

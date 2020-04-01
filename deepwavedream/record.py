@@ -5,8 +5,9 @@ process of the neural network training. It provides access to the gradient norm
 and layer informations to desing custom sonificatopn either for debugging
 or artistic purposes.
 """
-from typing import List
 from tqdm import tqdm
+from typing import List
+from typing import Callable
 
 import json
 import numpy as np
@@ -107,7 +108,13 @@ class Record:
             self.cumul = [0 for i in range(len(self.layers))]
 
 
-    def save(self, layer_duration: float, path: str, sr: int = 48_000) -> None:
+    def save(
+        self, 
+        layer_duration: float, 
+        path: str, 
+        sr: int = 48_000, 
+        callback: Callable = None
+    ) -> None:
         """save
         
         Arguments:
@@ -117,6 +124,8 @@ class Record:
         
         Keyword Arguments:
             sr {int} -- sample rate of the record to save (default: {48_000})
+            callback {Callable} -- callback to be called every note on
+                must take self (the context) and the current note number
         """
         n_frames = int(np.floor(layer_duration * len(self.history) * sr))
         times = (np.ones(n_frames) * (1.0 / sr)).cumsum()
@@ -135,6 +144,8 @@ class Record:
                 if played < len(self):
                     last = self.history[played]
                     self.instru.note_on(t, last)
+                    if callback is not None: 
+                        callback(self, played)
 
             samples.append(self.instru(t))
 
