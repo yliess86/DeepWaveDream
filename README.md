@@ -2,9 +2,8 @@
 
 DeepWaveDream is an experimental library. It aimes at sonifying the gradient norm evolution of a training deep neural network either for debugging or artistic purposes. The library is based on the experimental [WaveDream](https://github.com/yliess86/WaveDream) virtual synthetizer library and support only [PyTorch](https://pytorch.org/) models.
 
-*Application of DeepWaveDream on VGG11 trained on CIFAR10 with SGD optimizer*
+*Application of DeepWaveDream on VGG11 trained on CIFAR10 with SGD optimizer* [audio](https://soundcloud.com/yliess-hati/vgg11-cifar10)
 ![VGG11_CIFAR10](res/VGG11_CIFAR10.png)
-[audio](https://soundcloud.com/yliess-hati/vgg11-cifar10)
 
 ## Install
 
