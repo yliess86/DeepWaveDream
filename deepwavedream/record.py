@@ -179,7 +179,7 @@ class Record:
         with open(path, "r") as fh:
             data = json.load(fh.read())
         
-        record = cls([None for i in range(data["n_layers"])], instru)
+        record = cls(list(range(data["n_layers"])), instru=instru)
         record.history = data["history"]
         record.raw_history = data["raw_history"]
 

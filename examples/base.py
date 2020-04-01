@@ -3,6 +3,9 @@
 The example script contains all example instruments used in the example 
 scripts.
 """
+from typing import Callable
+from typing import List
+
 import wavedream as wd 
 
 
@@ -38,22 +41,30 @@ class DreamSynth:
         gain: float = 0.2, 
         feedback: float = 0.95,
         wet: float = 0.9,
-        n_reverbs: int = 1 
+        n_reverbs: int = 1
     ) -> None:
-        self.bell = base(volume)
+        self.base = base(volume)
         self.reverbs = [
             wd.Reverb(48_000, gain, feedback, wet)
             for i in range(n_reverbs)
         ]
 
     def __call__(self, t: float) -> float:
-        y = self.bell(t)
+        y = self.base(t)
         for reverb in self.reverbs:
             y = reverb(y)
         return y
 
     def note_on(self, t: float, note: int) -> None:
-        self.bell.note_on(t, note)
+        self.base.note_on(t, note)
 
     def note_off(self, t: float, note: int) -> None:
-        self.bell.note_off(t, note)
+        self.base.note_off(t, note)
+
+    @property
+    def adsr(self) -> wd.ADSR:
+        return self.base.adsr
+
+    @property
+    def timbre(self) -> wd.Timbre:
+        return self.base.timbre
